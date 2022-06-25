@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -7,8 +8,8 @@ Created on Wed Jun 15 11:08:20 2022
 """
 #%%
 from tifffile import imwrite
-from all_funcs import crop_using_roi_tuple
-from all_funcs import extract_roi_coordinates
+#from all_funcs import crop_using_roi_tuple
+#from all_funcs import extract_roi_coordinates
 from nd2reader import ND2Reader
 import os
 import numpy as np
@@ -29,21 +30,23 @@ import shutil
 #%% Get fov.zip file names and roi coordinates
 zip_dir = "/Users/amansharma/Documents/Data/test/rois_zip/";
 zip_files = [f for f in listdir(zip_dir) if isfile(join(zip_dir, f))];
+seg_zip_files = [f for f in listdir(zip_dir) if (isfile(join(zip_dir, f))  and ("seg" in f))];
+
 
 zip_files = zip_files[1:];
 zfs = zip_files.sort();
-files =[]
+
+
+files =[];
 for s in zip_files:
     files.append(s.replace('.zip', '')); 
-
-
+    
 st = "/Users/amansharma/Documents/Data/test/rois_im";
 shutil.rmtree(st);
 os.mkdir(st);
 
 fld = [st+'/'+s for s in files];
 for s in fld: os.mkdir(s);
-
 
 
 #%%
@@ -93,21 +96,50 @@ def extract_roi_coordinates(roizipfile):
         bottom=a[i][1]['top']+a[i][1]['height'];
         right=a[i][1]['left']+a[i][1]['width'];
         coordinates_list.append([(left,top,right,bottom)]);
-
+        
+    #print(np.shape(coordinates_list))
     return coordinates_list
 
-
+def getLUcell(roi_od):
+    xmin = 0;
+    ymin = 0;
+    cell_x ="";
+    cell_y ="";
+    for el in roi_od.keys():
+        xs = roi_od[el]['x'];
+        ys = roi_od[el]['y'];
+        print(xmin,ymin)
+        if((xmin == 0) or (min(xs)<xmin)):
+           xmin = min(xs);
+           cell_x = el;
+        if((ymin == 0) or (min(ys)<ymin)):
+            ymin = min(ys)
+            cell_y = el;
+           #print(xmin)
+    print(cell_x,cell_y)
+    xc = (min(roi_od[cell_x]['x']) + max(roi_od[cell_x]['x']))/2;
+    yc = (min(roi_od[cell_y]['y']) + max(roi_od[cell_y]['y']))/2;
+    
+    return(cell_x,xc,yc)
+    
+#def getminmax(roi_od)
 
 
 for fls in files:
 
-    roi_tuples = extract_roi_coordinates(zip_dir+fls+'.zip');    
-    fov = int(fls[3]);
-    stf = fld[files.index(fls)];    
-    for j in range(0,len(roi_tuples)):
-        roi_coordinates = roi_tuples[j][0];
-        st = stf+"/roi_"+str(j+1);
-        nd2_roi_extractor('/Volumes/GodardSSD/Microscope Images/Saransh/20220531_ylb128_gal2p.nd2',st,roi_coordinates,fov,j);
-            
+    if("seg" not in fls):    
+        a=1;
+        # roi_tuples = extract_roi_coordinates(zip_dir+fls+'.zip');    
+        # fov = int(fls[-1]);
+        # stf = fld[files.index(fls)];    
+        # for j in range(0,len(roi_tuples)):
+        #     roi_coordinates = roi_tuples[j][0];
+        #     st = stf+"/roi_"+str(j+1);
+        #     nd2_roi_extractor('/Volumes/GodardSSD/Microscope Images/Saransh/20220531_ylb128_gal2p.nd2',st,roi_coordinates,fov,j);
+        
+    else:
+        
+        roi_arr = read_roi_zip(zip_dir+fls+'.zip'); #this is an ordered dict with keys(get by roi_arr.keys()), and values are dict with name,x,y,n(no. of points) 
+        fc_n,fc_x,fc_y = getLUcell(roi_arr); #get the first cell ie, topmost and left most
         
         
