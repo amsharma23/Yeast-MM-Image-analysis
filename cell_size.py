@@ -12,16 +12,20 @@ SEGMENTED CELLS IN ROI ZIP MUST
 
 #%% libraries
 from tifffile import imwrite
+from tifffile import imread
+from PIL import Image
 from all_funcs import crop_using_roi_tuple
 from all_funcs import extract_roi_coordinates
 from nd2reader import ND2Reader
 import os
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 from os import walk
 from os import listdir
 from os.path import isfile, join
+
 
 
 from read_roi import read_roi_file
@@ -31,57 +35,54 @@ import trap_ex_func as trapf
 import cell_size_func as cellf
 
 import shutil
-
-
-#%% Get fov.zip file names and roi coordinates
-
-dirl = "/Users/amansharma/Documents/Data/test/";
-
-zip_dir = "/Users/amansharma/Documents/Data/test/rois_zip/";
-zip_files = [f for f in listdir(zip_dir) if isfile(join(zip_dir, f))];
-seg_zip_files = [f for f in listdir(zip_dir) if (isfile(join(zip_dir, f))  and ("seg" in f))];
-
-
-zip_files = zip_files[1:];
-zfs = zip_files.sort();
-
-
-files =[];
-for s in zip_files:
-    files.append(s.replace('.zip', '')); 
-    
-
-if(not os.path.exists(dirl+"plots/")):
-    os.mkdir(dirl+"plots");
-
-
 #%%
-roi_d = read_roi_zip("/Users/amansharma/Documents/Data/test/FOVs-20220531_ylb128_gal2p/FOV2_zip/FOV2.zip");
+def get_seg_images(path):#outputs array of tif files read as numpy arrays
 
-roi_traps_arr = trapf.gettraparr(roi_d); #gives array of the name of segmented cells that are traps
+    seg_images={};
 
-roi_traps={};
+    fovs_folder = [join(path,f) for f in listdir(path) if not(isfile(join(path, f)))];
 
-for el in range(len(roi_traps_arr)):
-    for el1 in (roi_traps_arr[el].keys()):
-       
-        roi_traps[el1] = roi_d[el1];
-
-roi_seg_in_mul_f = trapf.getmtimeframes(roi_d);
-
-roi_seg_cells = cellf.getycells(roi_seg_in_mul_f,roi_traps);
-
-
-cells = cellf.getuniquecells(roi_seg_cells);
-
-cells = cellf.addarea(cells); #add an value of cell area to each cell - key is 'area'
-
-#keys of cells are the name for a unique cell; it has array with the segmentation properties stored for each time frame
-#so cells[key]['time_f'] will give you number of time frames the cell is in; cells[key][int] will give segmentation element; cells[key][int]['area'] will give the calculated area for that time frame
+    
+    for folders in fovs_folder:
+        if(("seg" in folders) and ("im" in folders)):
+            for imgs in listdir(folders):
+                    if (isfile(join(folders,imgs)) and (".tif" in imgs)):
+                        im_ar = imread(join(folders,imgs));
+                        seg_images[imgs] = im_ar;
+                        
+                    
+    return(seg_images);
 
 
-cellf.plot_AvT(cells,dirl); #plots area vs time for cells with more than 4 time point measures
-cellf.savekym(cells,dirl); #save kymograph for cells 
+#%% Get fov.zip file names and roi coordinates 
+#Give directory of where all the zip files are - zip file of segmentation from YeastMate Fiji Plugin
+
+exp_folder = "/Users/amansharma/Documents/Data/test/temp_fovs";
+trajcs_a ={};
+ct = 1;
+for fov_flds in listdir(exp_folder):
+    if(fov_flds!=".DS_Store" and not(".tif" in fov_flds)):
+        pth = exp_folder+"/"+fov_flds;#FOV folders
+        
+        seg_imgs = get_seg_images(pth); #store all segmented images       
+        
+        roi_d = read_roi_zip(pth+"/"+fov_flds+"_zip/"+fov_flds+".zip"); #get the segmentation data
+
+        trapf.remtraps(roi_d,seg_imgs,pth); #makes and saves cropped and trap removed tif images in a Crops/ folder in the path given
+
+        trajcs = cellf.el_vol(pth+"/"); #the function will plot the estimated vol vs time as fitted by prolate ellipsoids, and spits back the trajectories
+        
+        trajcs_a[ct] = [trajcs[key] for key in trajcs.keys()];
+        ct+=1;
+        print(ct);
+
+cellf.plt_trj(trajcs_a,exp_folder); #plots the volume trajectories of every trap in a FOV
+print("Plotted trajectories");
+cellf.plt_dist(trajcs_a,exp_folder); #plots a distribution for the volumes of the cells
+
+
+
+
 
     
 
