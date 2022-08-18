@@ -13,9 +13,9 @@ SEGMENTED CELLS IN ROI ZIP MUST
 #%% libraries
 from tifffile import imwrite
 from tifffile import imread
-from all_funcs import crop_using_roi_tuple
-from all_funcs import extract_roi_coordinates
-from nd2reader import ND2Reader
+#from all_funcs import crop_using_roi_tuple
+#from all_funcs import extract_roi_coordinates
+
 import io
 import math
 import numpy as np
@@ -36,20 +36,26 @@ import os
 from os import listdir
 from os.path import isfile, join
 
-from read_roi import read_roi_file
-from read_roi import read_roi_zip
+#from read_roi import read_roi_file
+#from read_roi import read_roi_zip
 
-import trap_ex_func as trapf
-import cell_size_func as cellf
+#import trap_ex_func as trapf
+#import cell_size_func as cellf
 
 import collections
 import shutil
 #%% functions
 
+"""
+Here the cell size functions can take in 2 types of segmented images-segmented images of FoV and segmented images of just the trap
+The difference would be in the identification and verification of a segment being a trap or a cell.
 
+I) In the case of the entire FoV image being segmented - the traps are located using their fixed relative positions
+II) The trap images segmented - the trap volume is just eliminated from the volume (~180.12 μm^3)
 
+"""
 
-def make_kym(pics,path): #makes a gif of volume est vs time
+def make_kym(pics,path,istrps): #makes a gif of volume est vs time
     vl = [];
     trj =[];
     immgs=[];
@@ -62,12 +68,13 @@ def make_kym(pics,path): #makes a gif of volume est vs time
         fig, ax = plt.subplots(2);
         ax[0].imshow(pic_arr, cmap=plt.cm.gray);
         for props in regions:
+            
             y0, x0 = props.centroid;
             orientation = props.orientation;
-            x1 = x0 + math.cos(orientation) * 0.5 * props.axis_minor_length;
-            y1 = y0 - math.sin(orientation) * 0.5 * props.axis_minor_length;
-            x2 = x0 - math.sin(orientation) * 0.5 * props.axis_major_length;
-            y2 = y0 - math.cos(orientation) * 0.5 * props.axis_major_length;
+            x1 = x0 + math.cos(orientation) * 0.5 * props.minor_axis_length;
+            y1 = y0 - math.sin(orientation) * 0.5 * props.minor_axis_length;
+            x2 = x0 - math.sin(orientation) * 0.5 * props.major_axis_length;
+            y2 = y0 - math.cos(orientation) * 0.5 * props.major_axis_length;
                 
             ax[0].plot((x0, x1), (y0, y1), '-r', linewidth=2.5);
             ax[0].plot((x0, x2), (y0, y2), '-r', linewidth=2.5);
@@ -78,9 +85,11 @@ def make_kym(pics,path): #makes a gif of volume est vs time
             by = (minr, minr, maxr, maxr, minr);
             ax[0].plot(bx, by, '-b', linewidth=2.5);
                 
-            vol = (1/6)*math.pi*props.axis_major_length*(props.axis_minor_length**2)*(0.11**3);
-            vol_total+=vol;
+            vol = (1/6)*math.pi*props.major_axis_length*(props.minor_axis_length**2)*(0.11**3);
             
+            vol_total+=vol;
+        if(istrps): vol_total+= -180.12;
+
         vl.append(vol_total);
         ax[1].plot(np.array(range(len(vl)))*15,vl);
         ax[1].scatter(np.array(range(len(vl)))*15,vl,color='red');
@@ -106,15 +115,21 @@ def make_kym(pics,path): #makes a gif of volume est vs time
 
 
 
-def el_vol(path):
+def el_vol(path,istrps):
     traj={};
     t=1;
-    path_crp = path+"Crops/"
+    if(not istrps): path_crp = path+"Crops/"; #path of cropped segmented images
+    else: 
+        seg_im_pth  = [f for f in listdir(path) if ("seg" in f)];
+        path_crp = path+seg_im_pth[0];
+
+    
     if(os.path.exists(path_crp)):#checks if the path provided actually has any traps with yeasts or not
         pics_folders = [join(path_crp,f) for f in listdir(path_crp) if not(isfile(join(path_crp,f)))];
         for fld in pics_folders:
             pics = [join(fld,f) for f in listdir(fld) if ('.tif' in f)];
-            trj = make_kym(pics,fld);
+            print(fld);
+            trj = make_kym(pics,fld,istrps);
             traj[t] = trj;
             t+=1;
         return(traj);
@@ -141,13 +156,14 @@ def plt_dist(trajs,path):
     for el in trajs.keys():#goes over fovs
         for trjs in trajs[el]:#goes over trajectories 
             for v in trjs:
-                vols.append(v);
+                if(v!=0):
+                    vols.append(v);
     print(len(vols));
     ser = pd.Series(np.array(vols));
-    fig = ser.plot.hist(bins=20);
+    fig = ser.plot.hist(bins=50);
     plt.savefig(path+"/dist.tif",format='TIFF');
 
-    fig.clf();
+    fig.cla();
     plt.close();
 
 
@@ -163,12 +179,12 @@ def plt_dist(trajs,path):
 
 
 
+"""
 
 
-
-
-
-
+pic_pth = "/Users/amansharma/Documents/Data/test/20220531_ylb128_gal2p_fluor/Empty_trap";
+pic = "/Users/amansharma/Documents/Data/test/20220531_ylb128_gal2p_fluor/Empty_trap/segmentation of 1.tif";
+make_kym(pic,pic_pth);
 
 
 def getarea(arr):
@@ -277,7 +293,7 @@ def savekym(cells,path):
             buf.close();    
         
             imageio.mimsave(path+"plots/"+el+"/kym/kym.gif",ims);
-            
+"""            
             
 
             

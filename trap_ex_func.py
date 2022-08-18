@@ -15,7 +15,7 @@ from tifffile import imwrite
 from tifffile import imread
 from all_funcs import crop_using_roi_tuple
 from all_funcs import extract_roi_coordinates
-from nd2reader import ND2Reader
+
 import os
 import pandas as pd
 import numpy as np
@@ -31,8 +31,8 @@ from skimage.draw import ellipse
 from skimage.measure import label, regionprops, regionprops_table
 from skimage.transform import rotate
 
-from read_roi import read_roi_file
-from read_roi import read_roi_zip
+#from read_roi import read_roi_file
+#from read_roi import read_roi_zip
 
 import trap_ex_func as trapf
 import cell_size_func as cellf
@@ -71,31 +71,38 @@ def crop_traps(start_pos,roi_od,seg_imgs,path,ym,xm): #saves croped trap-removed
         check[1] = y_strt;
         if((chnls%2) == 0): 
             while check[1]<ym: #trap position should under image max
-                val_yeast = im[check[1]+20,check[0]+35];#where we expect a yeast cell to be 
-
-                if(val_yeast!=0):
-                    p_x = check[0];
-                    p_y = check[1];
-                    save_crop(seg_imgs,[p_x,p_y],nms,xm,ym,tr_n,chnls,path);
-                    tr_n+=1;
+                try:
+                    val_yeast = im[check[1]+20,check[0]+35];#where we expect a yeast cell to be 
+                    if(val_yeast!=0):
+                        p_x = check[0];
+                        p_y = check[1];
+                        save_crop(seg_imgs,[p_x,p_y],nms,xm,ym,tr_n,chnls,path);
+                        tr_n+=1;
                     
-                check[1] += 175;
-                
+                    check[1] += 175;
+                except IndexError:
+                    check[1] +=175; 
+                    continue;
+
             chnls+=1;
             x_strt += 230;
             
                 
         else:
             while check[1]<ym:
-                val_yeast = im[check[1]+20,check[0]+35];#where we expect a yeast cell to be 
-                if(val_yeast!=0):
-                    p_x = check[0];
-                    p_y = check[1];
-                    save_crop(seg_imgs,[p_x,p_y],nms,xm,ym,tr_n,chnls,path);
-                    tr_n+=1;
+                try:
+                    val_yeast = im[check[1]+20,check[0]+35];#where we expect a yeast cell to be 
+                    if(val_yeast!=0):
+                        p_x = check[0];
+                        p_y = check[1];
+                        save_crop(seg_imgs,[p_x,p_y],nms,xm,ym,tr_n,chnls,path);
+                        tr_n+=1;
                     
-                check[1] += 175;
-                                     
+                    check[1] += 175;
+                except IndexError:
+                    check[1] +=175; 
+                    continue;
+
             chnls+=1;
             x_strt += 720;
             
@@ -259,10 +266,15 @@ def left_top(roi_od): #finds the left top most segmented cell
     
     return(left_tp);
 
+def getleftop(roi_od):         
+    lft_name = left_top(roi_od);
+    lftp_pos = [ (max(roi_od[lft_name]['x']) + min(roi_od[lft_name]['x']))/2 , (max(roi_od[lft_name]['y']) + min(roi_od[lft_name]['y']))/2];
+    
+    return[lft_name,lftp_pos]
 
 
 
-
+#def get_fl_trap()
 
 
 
@@ -329,104 +341,72 @@ def left_top(roi_od): #finds the left top most segmented cell
 
 
 
-def jumpright(ltp,ltn,od):
-    pos =[];
-    name ='';
-    for el in od.keys():    
-        if ((ltp[0]+710<od[el]['pos'][0]<ltp[0]+730) and (ltp[1]-20<od[el]['pos'][1]<ltp[1]+20)):#for further channerl
-                pos = od[el]['pos'];
-                name = el;
-                break;
+# def jumpright(ltp,ltn,od):
+#     pos =[];
+#     name ='';
+#     for el in od.keys():    
+#         if ((ltp[0]+710<od[el]['pos'][0]<ltp[0]+730) and (ltp[1]-20<od[el]['pos'][1]<ltp[1]+20)):#for further channerl
+#                 pos = od[el]['pos'];
+#                 name = el;
+#                 break;
   
-    return[pos,name];
+#     return[pos,name];
     
 
 
 
-def moveright(ltp,ltn,od):
-    pos =[];
-    name='';
-    for el in od.keys():    
-        if ((ltp[0]+225<od[el]['pos'][0]<ltp[0]+245) and (ltp[1]-20<od[el]['pos'][1]<ltp[1]+20)):#for neighbour channel
-                pos = od[el]['pos'];
-                name = el;
-                break;
+# def moveright(ltp,ltn,od):
+#     pos =[];
+#     name='';
+#     for el in od.keys():    
+#         if ((ltp[0]+225<od[el]['pos'][0]<ltp[0]+245) and (ltp[1]-20<od[el]['pos'][1]<ltp[1]+20)):#for neighbour channel
+#                 pos = od[el]['pos'];
+#                 name = el;
+#                 break;
   
-    return[pos,name];
+#     return[pos,name];
   
 
     
 
-def getleftop(roi_od):         
-    lft_name = left_top(roi_od);
-    lftp_pos = [ (max(roi_od[lft_name]['x']) + min(roi_od[lft_name]['x']))/2 , (max(roi_od[lft_name]['y']) + min(roi_od[lft_name]['y']))/2];
-    
-    return[lft_name,lftp_pos]
 
 
 
 
 
-def gettrapcell(lft_name,lftp_pos,y_max,x_max,roi_od):
-    traps=[];
-    x_pos=[];
-    cnt =0;
+# def gettrapcell(lft_name,lftp_pos,y_max,x_max,roi_od):
+#     traps=[];
+#     x_pos=[];
+#     cnt =0;
     
   
     
-    for i in range(0,6): #remember this gives i's in [0..5]
+#     for i in range(0,6): #remember this gives i's in [0..5]
         
-        if (i==0): 
-            #print(lftp_pos);
-            chnl = getchn(lftp_pos,roi_od,y_max);
-            chnl[lft_name] = roi_od[lft_name];
-            traps.append(chnl);
-        elif(i%2 == 0): 
-            [lftp_pos2,lft_name2] = jumpright(lftp_pos,lft_name,roi_od); 
-            if(lftp_pos2):
-                lftp_pos = lftp_pos2; lft_name = lft_name2;
-                chnl = getchn(lftp_pos,roi_od); 
-                chnl[lft_name] = roi_od[lft_name];
-                traps.append(chnl);
-        else: 
-            [lftp_pos1,lft_name1] = moveright(lftp_pos,lft_name,roi_od); 
-            if(lftp_pos1):
+#         if (i==0): 
+#             #print(lftp_pos);
+#             chnl = getchn(lftp_pos,roi_od,y_max);
+#             chnl[lft_name] = roi_od[lft_name];
+#             traps.append(chnl);
+#         elif(i%2 == 0): 
+#             [lftp_pos2,lft_name2] = jumpright(lftp_pos,lft_name,roi_od); 
+#             if(lftp_pos2):
+#                 lftp_pos = lftp_pos2; lft_name = lft_name2;
+#                 chnl = getchn(lftp_pos,roi_od); 
+#                 chnl[lft_name] = roi_od[lft_name];
+#                 traps.append(chnl);
+#         else: 
+#             [lftp_pos1,lft_name1] = moveright(lftp_pos,lft_name,roi_od); 
+#             if(lftp_pos1):
 
-                lftp_pos = lftp_pos1; lft_name = lft_name1;
-                chnl = getchn(lftp_pos,roi_od); 
-                chnl[lft_name] = roi_od[lft_name];
-                traps.append(chnl);
+#                 lftp_pos = lftp_pos1; lft_name = lft_name1;
+#                 chnl = getchn(lftp_pos,roi_od); 
+#                 chnl[lft_name] = roi_od[lft_name];
+#                 traps.append(chnl);
          
     
             
-    return(traps);
+#     return(traps);
 
 
-
-
-
-
-
-
-
-def removetraps(image_arr,cells,traps):
-    for el in cells.keys():
-        x_c = int(cells[el][0]['pos'][0]); y_c = int(cells[el][0]['pos'][1]);
-        trp_c =0;
-        for els in traps.keys() :
-            if(trp_c==2):
-                    break;
-            elif(els in cells.keys()):
-                continue;
-            else:
-                x = traps[els]['pos'][0];
-                y = traps[els]['pos'][1];
-                
-                if(( (x_c+25<x<x_c+45)or(x_c-45<x<x_c-25)) and (y_c-30<y<y_c-10)):
-                    val = image_arr[y_c,x_c];
-                    image_arr[image_arr==val] =0;
-                    trp_c+=1;
-
-        
-    return(image_arr);
 

@@ -4,8 +4,8 @@
 Created on Wed Jul  6 12:25:17 2022
 
 @author: amansharma
-EXTRACTS CROPPED FOVs TIME SERIES INTO SEPERATE FOLDERS
-Make sure you have all_funcs added to path
+EXTRACTS FOVs TIME SERIES and ΤΙΜΕ SERIES FROM FLUROSENCE CHANNEL INTO SEPERATE FOLDERS
+Make sure you have all_funcs added to path & activate YeaZ for read-roi
 """
 #%% libraries
 from tifffile import imwrite
@@ -16,7 +16,7 @@ from pims import ND2Reader_SDK
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-
+import shutil
 
 from os import walk
 from os import listdir
@@ -39,7 +39,7 @@ for file in ND2_files:
     if (file[0] != '.'):
     
         fil = str.replace(file,'.nd2','');
-    
+        fil = fil + "_fluor";
     
         if (not os.path.exists(output_path+fil)):
             os.mkdir(output_path+fil);#make a folder where all files will be saved
@@ -51,6 +51,8 @@ for file in ND2_files:
         with ND2Reader_SDK(path_dir+"/"+file) as frames:
             fovs = (frames.sizes);
             fvs = range(fovs['m']);
+        
+            #print((frames));
             
             for fov in fvs: #goes over all FoVs
                 #print(frames.sizes);# --> xy: frame xy pixels to bundle; c: channels; t: time; z: z-slices; v: FOVs
@@ -58,13 +60,16 @@ for file in ND2_files:
                 frames.bundle_axes = 'yx';  # stitching the whole image in x and y dimension
                 frames.default_coords['m'] = fov;  #picking the FOV
                 frames.default_coords['z'] = 7; #outof 7 choose the middle z-slice
-                frames.default_coords['c'] = 0;    
+                frames.default_coords['c'] = 0; 
                 t=1;
      
                 if not os.path.exists(output_path+fil+"/FOVs/FOV"+str(fov)):
                     os.mkdir(output_path+fil+"/FOVs/FOV"+str(fov));#makes folder with all the time frames for a particular fov
-                if not os.path.exists(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts/"):
-                    os.mkdir(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts/");#makes folder with all the time frames for a particular fov                
+            
+                if not os.path.exists(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts_ph/"):
+                    os.mkdir(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts_ph/");#makes folder with all the time frames for a particular fov                
+            
+
                 if not os.path.exists(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_seg_im/"):
                     os.mkdir(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_seg_im/");#makes folder for the segmented images   
                 if not os.path.exists(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_zip/"):
@@ -73,7 +78,21 @@ for file in ND2_files:
 
                 try:
                     for frame in frames[:]: #iterates through time
-                        imwrite(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts/"+str(t)+".tif",frame,photometric='minisblack');
+                        imwrite(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts_ph/"+str(t)+".tif",frame,photometric='minisblack');
+                        t+=1;
+                except KeyError:
+                    print("Will be missing last frame; due to ND2Reader error");
+
+                frames.default_coords['c'] = 1; 
+                t=1;    
+
+                if not os.path.exists(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts_fl/"):
+                    os.mkdir(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts_fl/");#makes folder with all the time frames for a particular fov                
+
+
+                try:
+                    for frame in frames[:]: #iterates through time
+                        imwrite(output_path+fil+"/FOVs/FOV"+str(fov)+"/FOV"+str(fov)+"_ts_fl/"+str(t)+".tif",frame,photometric='minisblack');
                         t+=1;
                 except KeyError:
                     print("Will be missing last frame; due to ND2Reader error");

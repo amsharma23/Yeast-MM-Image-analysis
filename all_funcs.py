@@ -18,8 +18,8 @@ import os
 
 #All the functions you need for cropping and cleaning rois from segmented cell images
 
-from read_roi import read_roi_file
-from read_roi import read_roi_zip
+#from read_roi import read_roi_file
+#from read_roi import read_roi_zip
 
 def extract_roi_coordinates(roizipfile):
     coordinates_list=[] #[(left,top,right,bottom)] row and column coordinates for the rectangular roi
