@@ -19,4 +19,15 @@ import albumentations as alb
 img_fld = "/Users/amansharma/Documents/Data/test/UNET/Training data/BF/Trap1_aug/resize_and_rescaled";
 mask_fld = "/Users/amansharma/Documents/Data/test/UNET/Training data/MasksBF/trap1_aug/resize_and_rescaled";
 
-transf = alb.Compose([alb.])
+img_fls = os.listdir(img_fld);
+img_fls.sort();
+mask_fls = os.listdir(mask_fld);
+mask_fls.sort();
+
+img_mask_dict_loc = {};
+
+for i in range(len(img_fls)):
+	img_mask_dict_loc[i] = [os.path.join(img_fld,img_fls[i]),os.path.join(mask_fld,mask_fls[i])];
+
+transf = alb.Compose([alb.augmentations.geometric.transforms.Flip,
+					  alb.augmentations.geometric.transforms.OpticalDistortion 	])
