@@ -1,4 +1,5 @@
 #Import all packages
+#All the functions you need for cropping and cleaning rois from segmented cell images
 
 from nd2reader import ND2Reader
 import matplotlib.pyplot as plt
@@ -16,7 +17,6 @@ import os
 
 
 
-#All the functions you need for cropping and cleaning rois from segmented cell images
 
 #from read_roi import read_roi_file
 #from read_roi import read_roi_zip
