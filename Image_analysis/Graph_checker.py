@@ -58,18 +58,21 @@ def load_image_and_skel(idx=0,curr_idx=0):
     nd_pdf = pd.read_csv(node_path)
     
     imp_indxs =  nd_pdf['Degree of Node']!= (2 or 0) #only the tips and branch points are important to highlight
+    print(imp_indxs)
+
     indxs = np.arange(len(imp_indxs))[imp_indxs]
-    np.append(indxs,curr_idx)
+    indxs = np.append(indxs, curr_idx)
+    print(indxs)
     
-    imp_nds = nd_pdf.index.values[imp_indxs]
-    imp_nds_pos_st = (nd_pdf.loc[imp_indxs,'Position(ZXY)'].values)
-    imp_nds_deg = (nd_pdf.loc[imp_indxs,'Degree of Node'].values).astype(int)
+    imp_nds = nd_pdf.index.values[indxs]
+    imp_nds_pos_st = (nd_pdf.loc[indxs,'Position(ZXY)'].values)
+    imp_nds_deg = (nd_pdf.loc[indxs,'Degree of Node'].values).astype(int)
     
       
             
       
-    imp_nds_label = (nd_pdf.loc[imp_indxs,'Node#'].values).astype(str)
-    imp_nds_cc = (nd_pdf.loc[imp_indxs,'CC(Island)#'].values).astype(str)
+    imp_nds_label = (nd_pdf.loc[indxs,'Node#'].values).astype(str)
+    imp_nds_cc = (nd_pdf.loc[indxs,'CC(Island)#'].values).astype(str)
     
     node_label = [i+'-'+imp_nds_label[ni] for ni,i in enumerate(imp_nds_cc)]
     
@@ -80,14 +83,13 @@ def load_image_and_skel(idx=0,curr_idx=0):
         imp_nds_pos_fl.append(pos)
     
     face_color_deg = []
-    for deg in imp_nds_deg:
-        print(type(deg))
+    for deg in imp_nds_deg[:-1]:
         if(deg==1): face_color_deg.append('red')
         else: face_color_deg.append('green')
 
     face_color_deg.append('yellow')
-
-     
+    print(face_color_deg)
+    
 
 
     raw_im = imread(raw_im_path)
@@ -96,8 +98,6 @@ def load_image_and_skel(idx=0,curr_idx=0):
     
     
     return raw_im, skel_im, imp_nds_pos_fl, feat, face_color_deg
-
-
 
 idx = 0
 curr_node_idx = 0 
@@ -108,8 +108,20 @@ viewer.add_image(skel_im,name='skeleton')
 points_layer = viewer.add_points(imp_nds_pos_fl,features=feat,text = 'label' ,size=10,face_color = face_color_deg) 
 
 
-@viewer.bind_key('\u2191')
+@viewer.bind_key('Up')
 def move_to_next_node(viewer):
+#    curr_node_idx = viewer.layers[2].features['index']
+
+    curr_node_idx = viewer.layers[2].features['index'].iat[-1]
+    print('Cuurent Node is:'+str(curr_node_idx))
+    curr_node_idx= curr_node_idx + 1
+
+    print('Next Node is:'+str(curr_node_idx))
+    viewer.layers.clear()
+    raw_im, skel_im, imp_nds_pos_fl, feat, face_color_deg =load_image_and_skel(idx,curr_node_idx)
+    viewer.add_image(raw_im)
+    viewer.add_image(skel_im,name='skeleton') 
+    points_layer = viewer.add_points(imp_nds_pos_fl,features=feat,text = 'label' ,size=10,face_color = face_color_deg)
     print('Move up')
     
         
@@ -156,4 +168,4 @@ def move_on(viewer):
     viewer.add_image(raw_im)
     viewer.add_image(skel_im,name='skeleton') 
     points_layer = viewer.add_points(imp_nds_pos_fl,features=feat,text = 'label' ,size=10,face_color = face_color_deg) 
-    
+
