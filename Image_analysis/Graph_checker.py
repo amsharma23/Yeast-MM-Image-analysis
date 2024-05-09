@@ -58,7 +58,7 @@ def load_image_and_skel(idx=0,curr_idx=0):
     nd_pdf = pd.read_csv(node_path)
     
     imp_indxs =  nd_pdf['Degree of Node']!= (2 or 0) #only the tips and branch points are important to highlight
-    print(imp_indxs)
+    #print(imp_indxs)
 
     indxs = np.arange(len(imp_indxs))[imp_indxs]
     indxs = np.append(indxs, curr_idx)
@@ -111,11 +111,10 @@ points_layer = viewer.add_points(imp_nds_pos_fl,features=feat,text = 'label' ,si
 @viewer.bind_key('Up')
 def move_to_next_node(viewer):
 #    curr_node_idx = viewer.layers[2].features['index']
-
+    le = len(viewer.layers[2].features['index'])
     curr_node_idx = viewer.layers[2].features['index'].iat[-1]
     print('Cuurent Node is:'+str(curr_node_idx))
-    curr_node_idx= curr_node_idx + 1
-
+    curr_node_idx= (curr_node_idx + 1)%le
     print('Next Node is:'+str(curr_node_idx))
     viewer.layers.clear()
     raw_im, skel_im, imp_nds_pos_fl, feat, face_color_deg =load_image_and_skel(idx,curr_node_idx)
